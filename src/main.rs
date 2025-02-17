@@ -1,23 +1,10 @@
+use colored::{ColoredString, Colorize};
 use rand::prelude::IndexedRandom;
 use wordle::Correctness;
 
 const ANSWERS: &str = include_str!("../answers.txt");
 const DICTIONARY: &str = include_str!("../dictionary.txt");
 const GUESS_LENGTH: usize = 5;
-
-fn check(answer: &str, guess: &str) -> Vec<Correctness> {
-    let mut result = Vec::new();
-    for i in 0..GUESS_LENGTH {
-        if answer.chars().nth(i) == guess.chars().nth(i) {
-            result.push(Correctness::Correct(guess.chars().nth(i).unwrap()));
-        } else if answer.contains(guess.chars().nth(i).unwrap()) {
-            result.push(Correctness::Misplaced(guess.chars().nth(i).unwrap()));
-        } else {
-            result.push(Correctness::Incorrect(guess.chars().nth(i).unwrap()));
-        }
-    }
-    result
-}
 
 fn play(answer: &str) {
     let dictionary: Vec<&str> = DICTIONARY.lines().collect();
@@ -35,16 +22,16 @@ fn play(answer: &str) {
             continue;
         }
         tries -= 1;
-        let result = check(&answer, &guess);
-        for guess in result.iter() {
-            print!("{}", guess.colored_string());
+        let result = Correctness::check(&answer, &guess);
+        for (guess, result) in guess.chars().zip(result) {
+            let out = match result {
+                Correctness::Correct => ColoredString::from(String::from(guess)).black().on_bright_green().bold(),
+                Correctness::Misplaced => ColoredString::from(String::from(guess)).black().on_bright_yellow().bold(),
+                Correctness::Incorrect => ColoredString::from(String::from(guess)).white().on_black().bold()
+            };
+            print!("{}", out);
         }
-        if result.iter().all(|x| {
-            match x {
-                Correctness::Correct(_) => {true},
-                _ => false
-            }
-        }) {
+        if result.iter().all(|x| { *x == Correctness::Correct }) {
             println!("\nYou won!");
             return;
         }
